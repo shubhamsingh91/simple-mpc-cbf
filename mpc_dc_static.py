@@ -5,7 +5,10 @@ import time
 import pickle
 # System parameters
 dt = 0.1  # Sampling time
-N = 20   # Horizon
+N = 15   # Horizon
+print("------------------------------")
+print("-------------N = ", N)
+print("------------------------------")
 
 # System matrices (in discrete time)
 A = np.array([[1, 0, 0.1, 0],
@@ -46,14 +49,25 @@ def plot_traj_evol(predicted_x, predicted_y, current_state):
     plt.pause(0.5)  # Show the plot for 0.1 seconds
     plt.close()
 
+def print_states(i, cost, x0, current_state, next_pred_state):
+    print("-------------------------------------")
+    print("i             =", i)
+    print("cost          =", cost)
+    print("x0      state =", x0)
+    print("current state =", current_state)
+    print("nxt_prd state =", next_pred_state)
+
+
 x1_hist = []; x2_hist = []; x3_hist = []; x4_hist = []
 ux_hist = []; uy_hist = []
+cost_hist = []
+
 x_ref = np.array([10, 10, 0, 0])  # Reference state
 current_state = np.array([0,0,0,0]) # initial state
 
 total_cost = 0 # record total cost
 i = 0 # record total timesteps
-while np.linalg.norm(x_ref - current_state) > 0.1:
+while np.linalg.norm(x_ref - current_state) > 0.05:
 
     # Decision variables
     U = ca.MX.sym('U', n_u*N) #full control traj for N steps
@@ -74,7 +88,7 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     if i == 0:
         x0 = np.array([0,0,0,0])
     else:
-        x0 = np.array([x1_hist[-1], x2_hist[-1], x3_hist[-1], x4_hist[-1]])
+        x0 = np.array([x1_hist[-1], x2_hist[-1], x3_hist[-1], x4_hist[-1]]) # updating the initial state here
     i += 1 # increment of time step
     # Inital state constraint
     g.append(X[:n_x] - x0)
@@ -132,12 +146,15 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     u_opt = sol['x'][n_x*(N+1):].full().flatten()
     total_cost += sol['f']
     current_state = np.array([x_opt[0], x_opt[1], x_opt[2], x_opt[3]])
-    print(current_state)
+    next_pred_state = np.array([x_opt[4], x_opt[5], x_opt[6], x_opt[7]])
+
     # print("dim  = x_opt = ", x_opt.shape)
     states = x_opt[:n_x*(N+1)].reshape((N+1, n_x))
     predicted_x = states[:, 0]  # Extract x positions // this is basically a 2d matrix of (N+1) X n_x
     predicted_y = states[:, 1]  # Extract y positions
-    plot_traj_evol(predicted_x, predicted_y, current_state)
+
+    # plot_traj_evol(predicted_x, predicted_y, current_state)
+    print_states(i,sol['f'], x0, current_state, next_pred_state)
 
     x1_hist.append(x_opt[4])
     x2_hist.append(x_opt[5])
@@ -145,6 +162,7 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     x4_hist.append(x_opt[7])
     ux_hist.append(u_opt[0])
     uy_hist.append(u_opt[1])
+
 print(f"total time steps to reach goal state: {i}")
 print(f'total cost of operation: {total_cost}')
 trajectory = {
