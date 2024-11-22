@@ -26,6 +26,26 @@ def h_static(x):
     distance = (pos_x - 5)*(pos_x - 5) + (pos_y - 5)*(pos_y - 5)
     return distance - (2 + 0.5)**2
 
+# predicted x and predicted y are the state traj., current state is the state from which the
+# prediction is made.
+def plot_traj_evol(predicted_x, predicted_y, current_state):
+    plt.figure(figsize=(8, 6))
+    plt.plot(predicted_x, predicted_y, marker='o', label='Predicted trajectory (x, y)')
+    plt.scatter([current_state[0]], [current_state[1]], color='green', label='Current state', s=100)  # Current state
+    plt.scatter([x_ref[0]], [x_ref[1]], color='red', label='Goal state', s=100)  # Goal point
+    plt.xlabel('x position')
+    plt.ylabel('y position')
+    plt.title(f'Predicted Trajectory at MPC Step {i}')
+    plt.legend()
+    plt.grid()
+    # Fix the axis limits (adjust as needed based on your scenario)
+    plt.xlim(-1, 12)  # Example range for x-axis
+    plt.ylim(-1, 12)  # Example range for y-axis
+    # plt.show()
+    # Display the plot briefly and close it
+    plt.pause(0.5)  # Show the plot for 0.1 seconds
+    plt.close()
+
 x1_hist = []; x2_hist = []; x3_hist = []; x4_hist = []
 ux_hist = []; uy_hist = []
 x_ref = np.array([10, 10, 0, 0])  # Reference state
@@ -36,8 +56,8 @@ i = 0 # record total timesteps
 while np.linalg.norm(x_ref - current_state) > 0.1:
 
     # Decision variables
-    U = ca.MX.sym('U', n_u*N)
-    X = ca.MX.sym('X', n_x*(N+1))
+    U = ca.MX.sym('U', n_u*N) #full control traj for N steps
+    X = ca.MX.sym('X', n_x*(N+1)) #full state traj for N steps
 
     # Initialize objective and constraints
     obj = 0
@@ -62,8 +82,11 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     ubg_x0 = [0,0,0,0]
 
     # Construct the constrained optimization problem over preidiction horizon
+    # calculating the running cost/terminal cost for the entire traj. xk is the current state at k
     for k in range(N):
+        # print("k = ",k)
         xk = X[k*n_x:(k+1)*n_x]
+        # print("xk = ", X[k*n_x:(k+1)*n_x])
         uk = U[k*n_u:(k+1)*n_u]
         xk_next = X[(k+1)*n_x:(k+2)*n_x]
         
@@ -110,6 +133,11 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     total_cost += sol['f']
     current_state = np.array([x_opt[0], x_opt[1], x_opt[2], x_opt[3]])
     print(current_state)
+    # print("dim  = x_opt = ", x_opt.shape)
+    states = x_opt[:n_x*(N+1)].reshape((N+1, n_x))
+    predicted_x = states[:, 0]  # Extract x positions // this is basically a 2d matrix of (N+1) X n_x
+    predicted_y = states[:, 1]  # Extract y positions
+    plot_traj_evol(predicted_x, predicted_y, current_state)
 
     x1_hist.append(x_opt[4])
     x2_hist.append(x_opt[5])
