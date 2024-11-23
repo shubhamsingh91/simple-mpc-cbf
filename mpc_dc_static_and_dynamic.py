@@ -5,7 +5,10 @@ import time
 import pickle
 # System parameters
 dt = 0.1  # Sampling time
-N = 20    # Horizon
+N = 10    # Horizon
+print("------------------------------")
+print("-------------N = ", N)
+print("------------------------------")
 
 # System matrices (in discrete time)
 A = np.array([[1, 0, 0.1, 0],

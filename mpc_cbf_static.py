@@ -6,7 +6,11 @@ import pickle
 # System parameters
 dt = 0.1  # Sampling time
 N = 10     # Horizon
-gamma = 0.9 # CBF parameter
+print("------------------------------")
+print("-------------N = ", N)
+print("------------------------------")
+
+gamma = 0.1 # CBF parameter
 
 # System matrices (in discrete time)
 A = np.array([[1, 0, 0.1, 0],
@@ -25,6 +29,16 @@ def h_static(X):
     x = X[0]
     y = X[1]
     return (x-5)*(x-5) + (y-5)*(y-5) - (2 + 0.5)**2
+
+def print_states(i, cost, x0, current_state, next_pred_state):
+    print("-------------------------------------")
+    print("i             =", i)
+    print("cost          =", cost)
+    print("x0      state =", x0)
+    print("current state =", current_state)
+    print("nxt_prd state =", next_pred_state)
+
+
 
 x1_hist = []; x2_hist = []; x3_hist = []; x4_hist = []
 ux_hist = []; uy_hist = []
@@ -117,7 +131,12 @@ while np.linalg.norm(x_ref - current_state) > 0.1:
     u_opt = sol['x'][n_x*(N+1):].full().flatten()
     total_cost += sol['f']
     current_state = np.array([x_opt[0], x_opt[1], x_opt[2], x_opt[3]])
+    next_pred_state = np.array([x_opt[4], x_opt[5], x_opt[6], x_opt[7]])
+
     print(current_state)
+
+    print_states(i,sol['f'], x0, current_state, next_pred_state)
+
     x1_hist.append(x_opt[4])
     x2_hist.append(x_opt[5])
     x3_hist.append(x_opt[6])

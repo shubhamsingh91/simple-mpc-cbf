@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import time
 import pickle
 # System parameters
+
 dt = 0.1  # Sampling time
-N = 15   # Horizon
+N = 20    # Horizon
+
 print("------------------------------")
 print("-------------N = ", N)
 print("------------------------------")
@@ -57,10 +59,38 @@ def print_states(i, cost, x0, current_state, next_pred_state):
     print("current state =", current_state)
     print("nxt_prd state =", next_pred_state)
 
+def plot_cost(iter_hist, cost_hist):
+    """
+    Plots the cost function vs. MPC iteration number.
+
+    Parameters:
+        iter_hist (list or array): A list of iteration numbers.
+        cost_hist (list or array): A list of cost values for each iteration.
+    """
+    # Convert to arrays and ensure they are 1D
+    iter_hist = np.array(iter_hist).squeeze()
+    cost_hist = np.array(cost_hist).squeeze()
+
+    # Check dimensions
+    if iter_hist.ndim > 1 or cost_hist.ndim > 1:
+        raise ValueError(f"iter_hist and cost_hist must be 1D. Got shapes {iter_hist.shape} and {cost_hist.shape}")
+
+    # Plot cost vs. iteration
+    plt.figure(figsize=(10, 6))
+    plt.plot(iter_hist, cost_hist, marker='o', label='Cost per MPC iteration')
+    plt.xlabel('MPC Iteration Number')
+    plt.ylabel('Cost')
+    plt.title('Cost Function Evolution Over MPC Iterations')
+    plt.yscale('log')  # Set y-axis to logarithmic scale
+    plt.legend()
+    plt.grid()
+    plt.show()
+
 
 x1_hist = []; x2_hist = []; x3_hist = []; x4_hist = []
 ux_hist = []; uy_hist = []
 cost_hist = []
+iter_hist = []
 
 x_ref = np.array([10, 10, 0, 0])  # Reference state
 current_state = np.array([0,0,0,0]) # initial state
@@ -90,6 +120,8 @@ while np.linalg.norm(x_ref - current_state) > 0.05:
     else:
         x0 = np.array([x1_hist[-1], x2_hist[-1], x3_hist[-1], x4_hist[-1]]) # updating the initial state here
     i += 1 # increment of time step
+    iter_hist.append(i)
+
     # Inital state constraint
     g.append(X[:n_x] - x0)
     lbg_x0 = [0,0,0,0]
@@ -156,12 +188,16 @@ while np.linalg.norm(x_ref - current_state) > 0.05:
     # plot_traj_evol(predicted_x, predicted_y, current_state)
     print_states(i,sol['f'], x0, current_state, next_pred_state)
 
+    cost_hist.append(sol['f'])
     x1_hist.append(x_opt[4])
     x2_hist.append(x_opt[5])
     x3_hist.append(x_opt[6])
     x4_hist.append(x_opt[7])
     ux_hist.append(u_opt[0])
     uy_hist.append(u_opt[1])
+
+
+plot_cost(iter_hist, cost_hist)
 
 print(f"total time steps to reach goal state: {i}")
 print(f'total cost of operation: {total_cost}')
